@@ -55,6 +55,15 @@ class FlowService:
         target = ACTION_RULES[action]
         if target not in STATUS_ORDER:
             return None, f"目标状态「{target}」不在允许的状态序列里"
+        current = str(entry.get("status") or "")
+        if current not in STATUS_ORDER:
+            return None, f"编排流程当前状态「{current}」不在状态序列里，无法流转"
+        current_index = STATUS_ORDER.index(current)
+        if current_index + 1 >= len(STATUS_ORDER):
+            return None, f"编排流程已处于终态「{current}」，状态只能按顺序单向流转，不能再执行「{action}」"
+        expected = STATUS_ORDER[current_index + 1]
+        if target != expected:
+            return None, f"状态只能从「{current}」按顺序流转到「{expected}」，不允许跳级或回退到「{target}」"
         entry["status"] = target
         entry["pending"] = target != STATUS_ORDER[-1]
         entry["abnormal"] = action in NEGATIVE_ACTIONS

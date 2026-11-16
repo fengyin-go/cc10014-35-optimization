@@ -30,6 +30,22 @@ def list_entries(
     return PageResult(items=items, total=total, page=page, size=size)
 
 
+@router.get("/export")
+def export_entries() -> dict[str, Any]:
+    """导出响应转换清单：返回当前过滤条件下的全量数据。"""
+    items, total = service.list_entries(page=1, size=10000)
+    return {"module": "transform", "total": total, "items": items}
+
+
+@router.get("/step-contracts/{flow_code}")
+def read_step_contract(flow_code: str) -> dict[str, Any]:
+    """读取编排步骤契约：转换模块按稳定顺序和完整字段加工响应。"""
+    contract = service.read_step_contract(flow_code)
+    if contract is None:
+        raise HTTPException(status_code=404, detail=f"流程 {flow_code} 还没有同步编排步骤契约")
+    return contract
+
+
 @router.get("/{entry_id}", response_model=dict)
 def get_entry(entry_id: int) -> dict:
     """读取单条转换模板明细；不存在时给出可读的错误说明。"""
@@ -56,10 +72,3 @@ def run_action(entry_id: int, payload: EntryPayload) -> ActionResult:
     if entry is None:
         return ActionResult(ok=False, message=message)
     return ActionResult(ok=True, message=message, entry=entry)
-
-
-@router.get("/export")
-def export_entries() -> dict[str, Any]:
-    """导出响应转换清单：返回当前过滤条件下的全量数据。"""
-    items, total = service.list_entries(page=1, size=10000)
-    return {"module": "transform", "total": total, "items": items}

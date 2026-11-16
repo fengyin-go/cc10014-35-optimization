@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.services.flowrun import CONTRACT_TABLE
 from app.store import store
 
 MODULE = "transform"
@@ -32,6 +33,15 @@ class TransformService:
 
     def get_entry(self, entry_id: int) -> dict[str, Any] | None:
         return store.find(MODULE, entry_id)
+
+    def read_step_contract(self, flow_code: str) -> dict[str, Any] | None:
+        """读取编排步骤契约：转换模块按契约里的稳定顺序和完整字段加工响应。
+
+        契约由查询编排的合并结果同步写入；同一流程取最新一次同步。"""
+        contracts = [row for row in store.rows(CONTRACT_TABLE) if str(row.get("流程编号")) == flow_code]
+        if not contracts:
+            return None
+        return max(contracts, key=lambda row: int(row.get("id", 0)))
 
     def create_entry(self, values: dict[str, Any]) -> tuple[dict[str, Any] | None, list[str]]:
         missing = [field for field in REQUIRED_FIELDS if not str(values.get(field) or "").strip()]

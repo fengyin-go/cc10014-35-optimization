@@ -8,6 +8,10 @@ from typing import Any
 
 from app.seed import SEED_ROWS
 
+# 编排执行引擎的内部数据表：执行实例、步骤执行记录、依赖产物、合并结果、
+# 编排步骤契约。它们服务断点续做与复核，不计入业务模块概览。
+INTERNAL_TABLES = {"flow_run", "flow_step_record", "flow_artifact", "flow_merge", "flow_contract"}
+
 
 class Store:
     def __init__(self) -> None:
@@ -16,7 +20,7 @@ class Store:
         }
 
     def module_names(self) -> list[str]:
-        return sorted(self._tables)
+        return sorted(name for name in self._tables if name not in INTERNAL_TABLES)
 
     def rows(self, module: str) -> list[dict[str, Any]]:
         return self._tables.setdefault(module, [])
